@@ -1,0 +1,6 @@
+name = jQuery countdown formatter for 'to' date.
+description = Formatter for date fields displaying time until 'to' date.
+
+core = 7.x
+
+dependencies[] = jquery_countdown

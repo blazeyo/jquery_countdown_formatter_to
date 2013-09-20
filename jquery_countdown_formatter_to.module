@@ -1,0 +1,73 @@
+<?php
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function jquery_countdown_formatter_to_field_formatter_info() {
+  $formatters = array(
+    'jquery_countdown_to' => array(
+      'label' => t('jQuery Countdown "to" date'),
+      'field types' => array('date', 'datestamp', 'datetime'),
+    ),
+  );
+  return $formatters;
+}
+
+function jquery_countdown_formatter_to_field_formatter_view($entity_type, $entity, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+  $formatter = $display['type'];
+
+  $vars = array(
+    'entity' => $entity,
+    'entity_type' => $entity_type,
+    'field' => $field,
+    'instance' => $instance,
+    'langcode' => $langcode,
+    'items' => $items,
+    'display' => $display,
+    'dates' => array(),
+    'options' => array(
+      'until' => date("F d, Y g:i a", time()), // default time to prevent errors
+      'format' => 'DHMS',
+      'description' => '',
+    ),
+  );
+
+  // See if we are only supposed to display a selected
+  // item from multiple value date fields.
+  $selected_deltas = array();
+  if (!empty($entity->date_id)) {
+    foreach ((array) $entity->date_id as $key => $id) {
+      list($module, $nid, $field_name, $selected_delta, $other) = explode(':', $id);
+      if ($field_name == $field['field_name']) {
+        $selected_deltas[] = $selected_delta;
+      }
+    }
+  }
+
+  switch ($display['type']) {
+    case 'jquery_countdown_to':
+    default:
+      foreach ($items as $delta => $item) {
+        if (!empty($entity->date_id) && !in_array($delta, $selected_deltas)) {
+          continue;
+        }
+        else {
+          static $i = 0;
+          $time = is_numeric($item['value2']) ? $item['value2'] : strtotime($item['value2']);
+
+          $vars['delta'] = $i++;
+          $vars['item'] = $item;
+          $vars['id'] = $instance['field_name'] . '-' . $instance['id']; // use field as unique id
+          $vars['options']['until'] = date("F d, Y g:i a +0000", $time); // get date from start field
+
+          $element[$delta] = array('#markup' => theme('jquery_countdown', $vars));
+
+        }
+      }
+    break;
+  }
+
+  return $element;
+}
